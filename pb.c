@@ -1719,6 +1719,7 @@ static void lpbE_encode(lpb_Env *e, int idx, const pb_Type *t) {
             const char *s = lua_tolstring(L, -2, &len);
             const pb_Field *f =
                 pb_fname(t, lpb_name(e->LS, pb_lslice(s, len)));
+            argcheck(L, f != NULL, 2, "field: '%s' not exist", lua_tostring(L, -2));
             if (f != NULL) lpb_encode_onefield(e, -1, t, f);
             lua_pop(L, 1);
         }
@@ -2056,7 +2057,7 @@ static int Lpb_option(lua_State *L) {
 #undef  OPTS
 }
 
-LUALIB_API int luaopen_pb(lua_State *L) {
+LUALIB_API int luaopen_lpb(lua_State *L) {
     luaL_Reg libs[] = {
 #define ENTRY(name) { #name, Lpb_##name }
         ENTRY(clear),
