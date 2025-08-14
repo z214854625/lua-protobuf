@@ -94,17 +94,13 @@ function makepb.New(message_type)
 end
 
 function makepb.SetLazyDefaults(obj, message_type)
-    --修正 message_type，因为pb.fields返回的值是.CSMsg.xxx 多个.号
-    local firstChar = string.sub(message_type, 1, 1)
-    if firstChar == "." then
-        message_type = string.gsub(message_type, "^%.", "")
-    end
     local pb = makepb._lpb
-
+    message_type = makepb.AmendName(message_type)
     --缓存字段类型
     if makepb.fieldTypes[message_type] == nil then
         makepb.fieldTypes[message_type] = makepb.fieldTypes[message_type] or {}
         for name, number, type1, defaultval, label in pb.fields(message_type) do
+            name = makepb.AmendName(name)
             makepb.fieldTypes[message_type][name] = {type1 = type1, label = label}
         end
     end
@@ -152,6 +148,15 @@ function makepb.SetLazyDefaults(obj, message_type)
 
     setmetatable(obj, meta)
     return obj
+end
+
+function makepb.AmendName(message_type)
+    --修正 message_type，因为pb.fields返回的值是.CSMsg.xxx 多个.号
+    local firstChar = string.sub(message_type, 1, 1)
+    if firstChar == "." then
+        message_type = string.gsub(message_type, "^%.", "")
+    end
+    return message_type
 end
 
 function makepb.GetEnumDefaultVal(pb, name)
