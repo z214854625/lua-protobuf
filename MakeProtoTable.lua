@@ -7,6 +7,24 @@
 --[[
 注意：repeated不能序列化，要arr[1]才可以
 测试用例：
+function p_test0()
+    local msg = MakeProto1("CSMsg.TbsTroopContext")
+    print("k1--", msg.MasterID, msg.dir, msg.haloids) 
+    msg.weapon.weaponId = 101
+    local sub1 = msg.arrFaction:add()
+    sub1.faction = 1
+    sub1.factionStage = 2
+    sub1.factionProLv = 3
+    local str = msg:SerializeToString()
+    local newmsg = MakeProto1("CSMsg.TbsTroopContext")
+    newmsg:ParseFromString(str)
+    print("newmsg1=", newmsg.arrFaction, newmsg.arrFaction:ToString())
+    newmsg.arrFaction:Clear()
+    print("newmsg2=", newmsg.arrFaction:ToString())
+    print("newmsg3=", newmsg:ToString())
+end
+p_test0()
+
 function p_test1()
     local msg = MakeProto1("CSMsg.TbsTroopContext")
     print("k1--", msg.kkkk, msg.MasterID, msg.dir, msg.weapon.weaponId, msg.haloids, msg.arrFaction, getmetatable(msg.arrFaction))
@@ -394,7 +412,7 @@ end
 
 function makepb.SetLazyDefaults(obj, message_type)
     if message_type == nil then
-        error("makepb.SetLazyDefaults message_type nil")
+        error("makepb.SetLazyDefaults message_type nil", debug.traceback())
         return obj
     end
     local pb = makepb._lpb
@@ -460,6 +478,7 @@ end
 
 function makepb.LazyMetaWrapper(obj, message_type)
     local pb = makepb._lpb
+    message_type = makepb.AmendName(message_type)
     local field_types = makepb.GetFieldTypes(message_type)
     local wrapper = { _obj = obj }
     local meta = {
@@ -477,7 +496,7 @@ function makepb.LazyMetaWrapper(obj, message_type)
                 --error("LazyMetaWrapper field_types info nil", k, message_type)
                 return v
             end
-            print("LazyMetaWrapper 2--", k, v, message_type)
+            --print("LazyMetaWrapper 2--", k, v, message_type)
             -- value nil
             local name2, _, type2 = pb.type(info.type1)
             if v == nil then
@@ -499,12 +518,13 @@ function makepb.LazyMetaWrapper(obj, message_type)
             end
             --have value
             if type(v) == "table" and not getmetatable(v) then
-                --print("LazyMetaWrapper 4--", k, v, message_type, name2, type2)
+                --print("LazyMetaWrapper 4--", k, v, message_type, name2, type2, info.label)
                 if type2 == "message" then
                     if info.label == "repeated" then
                         for i, elem in ipairs(v) do
                             v[i] = makepb.SetMeta(elem, name2)
                         end
+                        v = setmetatable(v, makepb.MakeRepeatedMeta(name2))
                         t._obj[k] = v
                     else
                         v = makepb.SetMeta(v, name2)
@@ -543,6 +563,7 @@ function makepb.LazyMetaWrapper(obj, message_type)
 end
 
 function makepb.MakeRepeatedMeta(repeated_message_type)
+    repeated_message_type = makepb.AmendName(repeated_message_type)
     local repeated_meta = {
         _message_type = repeated_message_type,
 
@@ -584,9 +605,9 @@ function makepb.SetMeta(obj, message_type)
         warning("makepb.SetMeta message_type nil")
         return obj
     end
-    --print("makepb.SetMeta 1--", message_type)
     local pb = makepb._lpb
     local mt = getmetatable(obj)
+    --print("makepb.SetMeta 1--", message_type, mt)
     if mt == nil then
         obj = makepb.SetLazyDefaults(obj, message_type)
     end
@@ -595,7 +616,7 @@ function makepb.SetMeta(obj, message_type)
         repeat
             local v = obj[k]
             if v == nil then
-                error("makepb.SetMeta val nil", message_type, k)
+                error("makepb.SetMeta val nil", message_type, k, debug.traceback())
                 break
             end
             --非message/repeated
@@ -637,7 +658,7 @@ end
 
 function makepb.AmendName(message_type)
     if message_type == nil then
-        error("makepb.AmendName message_type nil")
+        error("makepb.AmendName message_type nil", debug.traceback())
         return message_type
     end
     --修正 message_type，因为pb.fields返回的值是.CSMsg.xxx 多个.号
@@ -728,11 +749,12 @@ function pb_methods:ParseFromString(data)
     --print("makepb.ParseFromString 0--", self, mt._message_type)
     --t = makepb.SetMeta(t, mt._message_type)
     --makepb.Copy(self, t)
+    --print("makepb.ParseFromString 1--", self, mt, mt._message_type, getmetatable(self))
     local wrapper = makepb.LazyMetaWrapper(t, mt._message_type)
     self:Clear()
     self._obj = wrapper._obj
     setmetatable(self, getmetatable(wrapper))
-    --print("makepb.ParseFromString 1--", self, mt, mt._message_type, getmetatable(self))
+    --print("makepb.ParseFromString 2--", self, mt, mt._message_type, getmetatable(self))
 end
 
 function pb_methods:add()
@@ -753,7 +775,7 @@ function pb_methods:MergeFrom(from)
     end
     local same = mt._message_type == mtf._message_type
     if not same then
-        error("pb_methods:MergeFrom failed! _message_type error", mt._message_type, mtf._message_type)
+        error("pb_methods:MergeFrom failed! _message_type error", mt._message_type, mtf._message_type, debug.traceback())
         return
     end
     self:Clear()
