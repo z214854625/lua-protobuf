@@ -923,6 +923,7 @@ function _G.test_buffer()
       eq(buffer.tohex(buffer.pack("q", "#9223372036854775807")), "FF FF FF FF FF FF FF 7F")
    end
    eq(buffer.pack("s", "foo"), "\3foo")
+   eq(buffer.pack("cc", "", ""), "")
    eq(buffer.pack("cc", "foo", "bar"), "foobar")
    eq(buffer():pack("vvv", 1,2,3):result(), "\1\2\3")
 

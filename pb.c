@@ -690,7 +690,10 @@ static int lpb_packfmt(lua_State *L, int idx, pb_Buffer *b, const char **pfmt, i
         case 'q':
             len = pb_addfixed64(b, (uint64_t)lpb_checkinteger(L, idx++));
             break;
-        case 'c': len = pb_addslice(b, lpb_checkslice(L, idx++)); break;
+        case 'c':
+            v.s[0] = lpb_checkslice(L, idx++);
+            len = pb_len(v.s[0]) ? pb_addslice(b, v.s[0]) : 1;
+            break;
         case 's': len = pb_addbytes(b, lpb_checkslice(L, idx++)); break;
         case '(':
             if ((len = pb_addvarint32(b, 0)) == 0) break;
